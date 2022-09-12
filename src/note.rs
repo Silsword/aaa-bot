@@ -210,13 +210,18 @@ impl Note {
 		State : {}\n\
 		Deadline : {}\n\
 		{}\n\
-		\n\n__id : {}__",
+		\n\nid : {}",
 		self.header,
 		self.state.to_message(),
-		if let Some(d) = self.deadline { d.as_str() } else { "None" },
+		if let Some(d) = self.deadline() { d.as_str() } else { "None" },
 		self.text,
 		self.id,
 	).to_string()
+    }
+    pub fn set_count(count : u64) {
+	unsafe {
+	    NOTES_COUNT = count;
+	}
     }
 }
 

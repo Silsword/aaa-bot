@@ -1,14 +1,14 @@
 use chrono::NaiveDate;
+use file::{load_from_file, save_to_file};
 use note::Note;
 use notes::Notes;
-use once_cell::unsync::Lazy;
+use once_cell::sync::Lazy;
 use std::rc::Rc;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::thread::sleep;
 use std::time::Duration;
 use std::{error::Error, str::FromStr};
-use mut_static::MutStatic;
-use lazy_static::lazy_static;
+
 use teloxide::{
     prelude::*,
     utils::command::{BotCommands, ParseError},
@@ -17,17 +17,12 @@ use teloxide::{
 mod file;
 mod note;
 mod notes;
-mod bot;
 
-lazy_static! {
-    static ref NOTES : MutStatic<Notes> = MutStatic::new();
-}
+static NOTES : Lazy<Mutex<Notes>> = Lazy::new(|| Mutex::new(load_from_file()));
 
 #[tokio::main]
 async fn main() {
     log::info!("Starting command bot...");
-
-    notes_from_file();
 
     let bot = Bot::new("5682122934:AAHRRQFnp-IIZTAuFkJXdDNIfpWWxmkYoKY").auto_send();
 
@@ -79,17 +74,76 @@ enum Command {
     Agenda,
 }
 
-fn notes_from_file() {
-    NOTES = Arc::from(file::load_from_file());
+fn note_add(inst : Note) {
+    NOTES.lock().unwrap().add(inst.clone());
+    if (inst.id() % 5 == 0) {
+	save_to_file(&Notes::from_json(NOTES.lock().unwrap().to_json()));
+    }
 }
 
-// fn get_mut_ref_notes<'a>() -> &'a mut Notes {
-//     unsafe { &mut NOTES }
-// }
+fn note_set_state(id : u64, state : String) -> bool {
+    if let Some(mut note) = NOTES.lock().unwrap().note_as_mut(id) {
+	note.set_state_from_string(state);
+	NOTES.lock().unwrap().add(note);
+	true
+    } else {
+	false
+    }
+}
 
-// fn get_ref_notes<'a>() -> &'a Notes {
-//     unsafe { &NOTES }
-// }
+fn note_set_deadline(id : u64, deadline : String) -> bool {
+    if let Some(mut note) = NOTES.lock().unwrap().note_as_mut(id) {
+	note.set_deadline(Some(deadline));
+	NOTES.lock().unwrap().add(note);
+	true
+    } else {
+	false
+    }
+}
+
+fn note_set_text(id : u64, text : String) -> bool {
+    if let Some(mut note) = NOTES.lock().unwrap().note_as_mut(id) {
+	note.set_text(text);
+	NOTES.lock().unwrap().add(note);
+	true
+    } else {
+	false
+    }
+}
+
+fn note_set_name(id : u64, name : String) -> bool {
+    if let Some(mut note) = NOTES.lock().unwrap().note_as_mut(id) {
+	note.set_header(name);
+	NOTES.lock().unwrap().add(note);
+	true
+    } else {
+	false
+    }
+}
+
+fn note_delete(id : u64) {
+    NOTES.lock().unwrap().delete(id);
+}
+
+fn note_show(id : u64) -> Option<Note> {
+    if let Some(note) = NOTES.lock().unwrap().note_by_id(id) {
+	Some(note.clone())
+    } else {
+	None
+    }
+}
+
+fn note_list(chat_id : u64) -> Vec<Note> {
+    NOTES.lock().unwrap().notes_by_chat(chat_id)
+}
+
+fn note_list_all(chat_id : u64) -> Vec<Note> {
+    NOTES.lock().unwrap().notes_by_chat_all(chat_id)
+}
+
+fn note_agenda(chat_id : u64) -> Vec<Note> {
+    NOTES.lock().unwrap().notes_agenda(chat_id)
+}
 
 async fn answer(
     bot: AutoSend<Bot>,
@@ -102,51 +156,39 @@ async fn answer(
                 .await?
         }
         Command::Create(name) => {
-            //	    let mut notes = get_mut_ref_notes();
             let inst = Note::new()
                 .with_header(name)
                 .with_chat(message.chat.id.0 as u64);
-            if inst.id() % 5 == 0 {
-                file::save_to_file(&NOTES);
-            }
-            NOTES.add(inst);
-            bot.send_message(message.chat.id, "Ok:)").await?
+	    note_add(inst.clone());
+	    bot.send_message(message.chat.id, format!("Ok:) id : {}", inst.id())).await?
         }
         Command::SetState(id, state) => {
-            //	    let mut notes = get_mut_ref_notes();
-            if let Some(mut note) = NOTES.note_as_mut(id) {
-                note.set_state_from_string(state);
+	    if note_set_state(id, state) {
                 bot.send_message(message.chat.id, "State changed").await?
             } else {
                 bot.send_message(message.chat.id, "Unknown id").await?
             }
         }
         Command::SetDead(id, deadline) => {
-            //	    let mut notes = get_mut_ref_notes();
             if let Err(_) = NaiveDate::from_str(&deadline) {
                 bot.send_message(message.chat.id, "Invalid date format")
                     .await?;
             }
-            if let Some(mut note) = NOTES.note_as_mut(id) {
-                note.set_deadline(Some(deadline));
+            if note_set_deadline(id, deadline) {
                 bot.send_message(message.chat.id, "State changed").await?
             } else {
                 bot.send_message(message.chat.id, "Unknown id").await?
             }
         }
         Command::Edit(id, text) => {
-            //	    let mut notes = get_mut_ref_notes();
-            if let Some(mut note) = NOTES.note_as_mut(id) {
-                note.set_text(text);
+            if note_set_text(id, text) {
                 bot.send_message(message.chat.id, "State changed").await?
             } else {
                 bot.send_message(message.chat.id, "Unknown id").await?
             }
         }
         Command::EditName(id, name) => {
-            //	    let mut notes = get_mut_ref_notes();
-            if let Some(mut note) = NOTES.note_as_mut(id) {
-                note.set_header(name);
+            if note_set_name(id, name) {
                 bot.send_message(message.chat.id, "State changed").await?
             } else {
                 bot.send_message(message.chat.id, "Unknown id").await?
@@ -154,31 +196,30 @@ async fn answer(
         }
         Command::Delete(id) => {
             //	    let mut notes = get_mut_ref_notes();
-            NOTES.delete(id);
+	    note_delete(id);
             bot.send_message(message.chat.id, "Ok:)").await?
         }
         Command::Show(id) => {
-//            let mut notes = get_mut_ref_notes();
-            if let Some(note) = NOTES.note_by_id(id) {
+            if let Some(note) = note_show(id) {
                 bot.send_message(message.chat.id, note.to_message()).await?
             } else {
                 bot.send_message(message.chat.id, "Unknown id").await?
             }
         }
         Command::List => {
-            for i in /*get_ref_notes()*/ NOTES.notes_by_chat(message.chat.id.0 as u64) {
+            for i in note_list(message.chat.id.0 as u64) {
                 bot.send_message(message.chat.id, i.to_message()).await?;
             }
             bot.send_message(message.chat.id, "Ok:)").await?
         }
         Command::ListAll => {
-            for i in /*get_ref_notes()*/ NOTES.notes_by_chat_all(message.chat.id.0 as u64) {
+	    for i in note_list_all(message.chat.id.0 as u64) {
                 bot.send_message(message.chat.id, i.to_message()).await?;
             }
             bot.send_message(message.chat.id, "Ok:)").await?
         }
         Command::Agenda => {
-            for i in /*get_ref_notes()*/ NOTES.notes_agenda(message.chat.id.0 as u64) {
+            for i in note_agenda(message.chat.id.0 as u64) {
                 bot.send_message(message.chat.id, i.to_message()).await?;
             }
             bot.send_message(message.chat.id, "Ok:)").await?

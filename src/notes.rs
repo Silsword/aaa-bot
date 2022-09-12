@@ -31,7 +31,9 @@ impl Notes {
     }
 
     pub fn from_json(notes : String) -> Notes {
-	serde_json::from_str(&notes).unwrap()
+	let notes : Notes = serde_json::from_str(&notes).unwrap();
+	Note::set_count(notes.notes.len() as u64);
+	notes
     }
 
     pub fn notes_by_chat_all(&self, chat_id : u64) -> Vec<Note> {
@@ -42,20 +44,31 @@ impl Notes {
     }
 
     pub fn notes_by_chat(&self, chat_id : u64) -> Vec<Note> {
-	self.notes_by_chat(chat_id)
+	self.notes_by_chat_all(chat_id)
 	    .iter().filter(| note | !note.done())
 	    .cloned()
 	    .collect()
     }
 
     pub fn note_by_id(&self, id : u64) -> Option<&Note> {
-	let inst = Note::new().with_id(id);
-	self.notes.get(&inst)
+	self.notes
+	    .iter()
+	    .filter(|a| a.id() == id)
+	    .collect::<Vec<&Note>>()
+	    .get(0)
+	    .copied()
     }
  
-    pub fn note_as_mut(&self, id : u64) -> Option<Note> {
-	let inst = Note::new().with_id(id);
-	self.notes.take(&inst)
+    pub fn note_as_mut(&mut self, id : u64) -> Option<Note> {
+	if let Some(inst) = self.notes
+	    .cloned()
+	    .filter(|a| a.id() == id)
+	    .collect::<Vec<Note>>()
+	    .get(0) {
+		self.notes.take(&inst)
+	    } else {
+		None
+	    }
     }
 
     pub fn notes_agenda(&self, chat_id : u64) -> Vec<Note> {
