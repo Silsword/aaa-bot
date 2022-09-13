@@ -84,7 +84,6 @@ fn note_add(inst : Note) {
 fn note_set_state(id : u64, state : String) -> bool {
     if let Some(mut note) = NOTES.lock().unwrap().note_as_mut(id) {
 	note.set_state_from_string(state);
-	NOTES.lock().unwrap().add(note);
 	true
     } else {
 	false
@@ -94,7 +93,6 @@ fn note_set_state(id : u64, state : String) -> bool {
 fn note_set_deadline(id : u64, deadline : String) -> bool {
     if let Some(mut note) = NOTES.lock().unwrap().note_as_mut(id) {
 	note.set_deadline(Some(deadline));
-	NOTES.lock().unwrap().add(note);
 	true
     } else {
 	false
@@ -104,7 +102,6 @@ fn note_set_deadline(id : u64, deadline : String) -> bool {
 fn note_set_text(id : u64, text : String) -> bool {
     if let Some(mut note) = NOTES.lock().unwrap().note_as_mut(id) {
 	note.set_text(text);
-	NOTES.lock().unwrap().add(note);
 	true
     } else {
 	false
@@ -114,7 +111,6 @@ fn note_set_text(id : u64, text : String) -> bool {
 fn note_set_name(id : u64, name : String) -> bool {
     if let Some(mut note) = NOTES.lock().unwrap().note_as_mut(id) {
 	note.set_header(name);
-	NOTES.lock().unwrap().add(note);
 	true
     } else {
 	false
@@ -175,27 +171,26 @@ async fn answer(
                     .await?;
             }
             if note_set_deadline(id, deadline) {
-                bot.send_message(message.chat.id, "State changed").await?
+                bot.send_message(message.chat.id, "Deadline changed").await?
             } else {
                 bot.send_message(message.chat.id, "Unknown id").await?
             }
         }
         Command::Edit(id, text) => {
             if note_set_text(id, text) {
-                bot.send_message(message.chat.id, "State changed").await?
+                bot.send_message(message.chat.id, "Text changed").await?
             } else {
                 bot.send_message(message.chat.id, "Unknown id").await?
             }
         }
         Command::EditName(id, name) => {
             if note_set_name(id, name) {
-                bot.send_message(message.chat.id, "State changed").await?
+                bot.send_message(message.chat.id, "Name changed").await?
             } else {
                 bot.send_message(message.chat.id, "Unknown id").await?
             }
         }
         Command::Delete(id) => {
-            //	    let mut notes = get_mut_ref_notes();
 	    note_delete(id);
             bot.send_message(message.chat.id, "Ok:)").await?
         }
