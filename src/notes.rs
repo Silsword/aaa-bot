@@ -6,6 +6,7 @@ use std::{
     str::FromStr,
 };
 
+
 #[derive(Serialize, Deserialize)]
 pub struct Notes {
     notes: HashMap<u64, Note>,
@@ -22,6 +23,7 @@ impl Notes {
 
     pub fn add(&mut self, note: Note) {
         self.notes.insert(note.id(), note);
+	self.size += 1;
     }
 
     pub fn delete(&mut self, id: u64) {
@@ -34,7 +36,7 @@ impl Notes {
 
     pub fn from_json(notes: String) -> Notes {
         let notes: Notes = serde_json::from_str(&notes).unwrap();
-        Note::set_count(notes.notes.len() as u64);
+        Note::set_count(notes.size as u64);
         notes
     }
 

@@ -74,9 +74,7 @@ enum Command {
 
 fn note_add(inst: Note) {
     NOTES.lock().unwrap().add(inst.clone());
-    if (inst.id() % 5 == 0) {
-        save_to_file(&Notes::from_json(NOTES.lock().unwrap().to_json()));
-    }
+    save_to_file(&Notes::from_json(NOTES.lock().unwrap().to_json()));
 }
 
 fn note_set_state(id: u64, state: String) -> bool {
@@ -91,6 +89,7 @@ fn note_set_state(id: u64, state: String) -> bool {
 fn note_set_deadline(id: u64, deadline: String) -> bool {
     if let Some(mut note) = NOTES.lock().unwrap().note_as_mut(id) {
         note.set_deadline(Some(deadline));
+	save_to_file(&Notes::from_json(NOTES.lock().unwrap().to_json()));
         true
     } else {
         false
@@ -100,6 +99,7 @@ fn note_set_deadline(id: u64, deadline: String) -> bool {
 fn note_set_text(id: u64, text: String) -> bool {
     if let Some(mut note) = NOTES.lock().unwrap().note_as_mut(id) {
         note.set_text(text);
+	save_to_file(&Notes::from_json(NOTES.lock().unwrap().to_json()));
         true
     } else {
         false
@@ -109,6 +109,7 @@ fn note_set_text(id: u64, text: String) -> bool {
 fn note_set_name(id: u64, name: String) -> bool {
     if let Some(mut note) = NOTES.lock().unwrap().note_as_mut(id) {
         note.set_header(name);
+	save_to_file(&Notes::from_json(NOTES.lock().unwrap().to_json()));
         true
     } else {
         false
@@ -117,6 +118,7 @@ fn note_set_name(id: u64, name: String) -> bool {
 
 fn note_delete(id: u64) {
     NOTES.lock().unwrap().delete(id);
+    save_to_file(&Notes::from_json(NOTES.lock().unwrap().to_json()));
 }
 
 fn note_show(id: u64) -> Option<Note> {
