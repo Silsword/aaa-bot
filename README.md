@@ -9,6 +9,6 @@ $ git clone https://github.com/Silsword/aaa-bot
 $ cd aaa-bot
 $ cargo build --release
 ```
-## Using
+## Usage
 Type `/start` to display welcome message.
 
