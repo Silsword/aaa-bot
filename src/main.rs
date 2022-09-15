@@ -18,7 +18,7 @@ mod file;
 mod note;
 mod notes;
 
-static NOTES : Lazy<Mutex<Notes>> = Lazy::new(|| Mutex::new(load_from_file()));
+static NOTES: Lazy<Mutex<Notes>> = Lazy::new(|| Mutex::new(load_from_file()));
 
 #[tokio::main]
 async fn main() {
@@ -32,112 +32,110 @@ async fn main() {
 #[derive(BotCommands, Clone)]
 #[command(rename = "lowercase", description = "These commands are supported:")]
 enum Command {
+    #[command(description = "start bot, display welcome message.")]
     #[command(description = "display this text.")]
     Help,
     #[command(
-        description = "create task with <name>.",
+        description = "<name> - create task with <name>.",
         parse_with = "one_line_parser"
     )]
     Create(String),
     #[command(
-        description = "<id> <ToDo | Doing | Done> - set task with <id> to state.",
+        description = "<id> <ToDo | Doing | Done> - set task with <id> to <state>.",
         parse_with = "split"
     )]
     SetState(u64, String),
     #[command(
-        description = "<id> <yyyy-mm-dd> - set task with <id> <deadline>.",
+        description = "<id> <yyyy-mm-dd> - set task with <id> due date to <dead>.",
         parse_with = "split"
     )]
     SetDead(u64, String),
     #[command(
-        description = "<id> <text> - set task with <id> text to <text>",
+        description = "<id> <text> - change text of task with <id> to <text>",
         parse_with = "text_parser"
     )]
     Edit(u64, String),
     #[command(
-        description = "<id> <name> - set task with <id> name to <name>.",
+        description = "<id> <name> - set name of task with <id> to <name>.",
         parse_with = "text_parser"
     )]
     EditName(u64, String),
     #[command(description = "<id> - delete task with <id>", parse_with = "split")]
     Delete(u64),
-    #[command(
-        description = "<id> <ToDo | Doing | Done> - set note with <id> to state.",
-        parse_with = "split"
-    )]
+    #[command(description = "<id> - show task with <id>", parse_with = "split")]
     Show(u64),
     #[command(description = "- list ToDo and Doing tasks")]
     List,
-    #[command(description = "- list all tasks")]
+    #[command(description = "list all tasks")]
     ListAll,
-    #[command(description = "- list all tasks for next week", parse_with = "split")]
+    #[command(description = "list all tasks for next week", parse_with = "split")]
     Agenda,
 }
 
-fn note_add(inst : Note) {
+fn note_add(inst: Note) {
     NOTES.lock().unwrap().add(inst.clone());
     if (inst.id() % 5 == 0) {
-	save_to_file(&Notes::from_json(NOTES.lock().unwrap().to_json()));
+        save_to_file(&Notes::from_json(NOTES.lock().unwrap().to_json()));
     }
 }
 
-fn note_set_state(id : u64, state : String) -> bool {
+fn note_set_state(id: u64, state: String) -> bool {
     if let Some(mut note) = NOTES.lock().unwrap().note_as_mut(id) {
-	note.set_state_from_string(state);
-	true
+        note.set_state_from_string(state);
+        true
     } else {
-	false
+        false
     }
 }
 
-fn note_set_deadline(id : u64, deadline : String) -> bool {
+fn note_set_deadline(id: u64, deadline: String) -> bool {
     if let Some(mut note) = NOTES.lock().unwrap().note_as_mut(id) {
-	note.set_deadline(Some(deadline));
-	true
+        note.set_deadline(Some(deadline));
+        true
     } else {
-	false
+        false
     }
 }
 
-fn note_set_text(id : u64, text : String) -> bool {
+fn note_set_text(id: u64, text: String) -> bool {
     if let Some(mut note) = NOTES.lock().unwrap().note_as_mut(id) {
-	note.set_text(text);
-	true
+        note.set_text(text);
+        true
     } else {
-	false
+        false
     }
 }
 
-fn note_set_name(id : u64, name : String) -> bool {
+fn note_set_name(id: u64, name: String) -> bool {
     if let Some(mut note) = NOTES.lock().unwrap().note_as_mut(id) {
-	note.set_header(name);
-	true
+        note.set_header(name);
+        true
     } else {
-	false
+        false
     }
 }
 
-fn note_delete(id : u64) {
+fn note_delete(id: u64) {
     NOTES.lock().unwrap().delete(id);
 }
 
-fn note_show(id : u64) -> Option<Note> {
+fn note_show(id: u64) -> Option<Note> {
     if let Some(note) = NOTES.lock().unwrap().note_by_id(id) {
-	Some(note.clone())
+        Some(note.clone())
     } else {
-	None
+        None
     }
 }
 
-fn note_list(chat_id : u64) -> Vec<Note> {
+fn note_list(chat_id: u64) -> Vec<Note> {
     NOTES.lock().unwrap().notes_by_chat(chat_id)
 }
 
-fn note_list_all(chat_id : u64) -> Vec<Note> {
+fn note_list_all(chat_id: u64) -> Vec<Note> {
     NOTES.lock().unwrap().notes_by_chat_all(chat_id)
 }
 
-fn note_agenda(chat_id : u64) -> Vec<Note> {
+fn note_agenda(chat_id: u64) -> Vec<Note> {
     NOTES.lock().unwrap().notes_agenda(chat_id)
 }
 
@@ -155,11 +153,12 @@ async fn answer(
             let inst = Note::new()
                 .with_header(name)
                 .with_chat(message.chat.id.0 as u64);
-	    note_add(inst.clone());
-	    bot.send_message(message.chat.id, format!("Ok:) id : {}", inst.id())).await?
+            note_add(inst.clone());
+            bot.send_message(message.chat.id, format!("Ok:) id : {}", inst.id()))
+                .await?
         }
         Command::SetState(id, state) => {
-	    if note_set_state(id, state) {
+            if note_set_state(id, state) {
                 bot.send_message(message.chat.id, "State changed").await?
             } else {
                 bot.send_message(message.chat.id, "Unknown id").await?
@@ -168,10 +167,10 @@ async fn answer(
         Command::SetDead(id, deadline) => {
             if let Err(_) = NaiveDate::from_str(&deadline) {
                 bot.send_message(message.chat.id, "Invalid date format")
-                    .await?;
-            }
-            if note_set_deadline(id, deadline) {
-                bot.send_message(message.chat.id, "Deadline changed").await?
+                    .await?
+            } else if note_set_deadline(id, deadline) {
+                bot.send_message(message.chat.id, "Deadline changed")
+                    .await?
             } else {
                 bot.send_message(message.chat.id, "Unknown id").await?
             }
@@ -191,7 +190,7 @@ async fn answer(
             }
         }
         Command::Delete(id) => {
-	    note_delete(id);
+            note_delete(id);
             bot.send_message(message.chat.id, "Ok:)").await?
         }
         Command::Show(id) => {
@@ -208,7 +207,7 @@ async fn answer(
             bot.send_message(message.chat.id, "Ok:)").await?
         }
         Command::ListAll => {
-	    for i in note_list_all(message.chat.id.0 as u64) {
+            for i in note_list_all(message.chat.id.0 as u64) {
                 bot.send_message(message.chat.id, i.to_message()).await?;
             }
             bot.send_message(message.chat.id, "Ok:)").await?
