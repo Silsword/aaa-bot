@@ -33,6 +33,7 @@ async fn main() {
 #[command(rename = "lowercase", description = "These commands are supported:")]
 enum Command {
     #[command(description = "start bot, display welcome message.")]
+    Start,
     #[command(description = "display this text.")]
     Help,
     #[command(
@@ -89,7 +90,7 @@ fn note_set_state(id: u64, state: String) -> bool {
 fn note_set_deadline(id: u64, deadline: String) -> bool {
     if let Some(mut note) = NOTES.lock().unwrap().note_as_mut(id) {
         note.set_deadline(Some(deadline));
-	save_to_file(&Notes::from_json(NOTES.lock().unwrap().to_json()));
+        save_to_file(&Notes::from_json(NOTES.lock().unwrap().to_json()));
         true
     } else {
         false
@@ -99,7 +100,7 @@ fn note_set_deadline(id: u64, deadline: String) -> bool {
 fn note_set_text(id: u64, text: String) -> bool {
     if let Some(mut note) = NOTES.lock().unwrap().note_as_mut(id) {
         note.set_text(text);
-	save_to_file(&Notes::from_json(NOTES.lock().unwrap().to_json()));
+        save_to_file(&Notes::from_json(NOTES.lock().unwrap().to_json()));
         true
     } else {
         false
@@ -109,7 +110,7 @@ fn note_set_text(id: u64, text: String) -> bool {
 fn note_set_name(id: u64, name: String) -> bool {
     if let Some(mut note) = NOTES.lock().unwrap().note_as_mut(id) {
         note.set_header(name);
-	save_to_file(&Notes::from_json(NOTES.lock().unwrap().to_json()));
+        save_to_file(&Notes::from_json(NOTES.lock().unwrap().to_json()));
         true
     } else {
         false
@@ -147,6 +148,16 @@ async fn answer(
     command: Command,
 ) -> Result<(), Box<dyn Error + Send + Sync>> {
     match command {
+        Command::Start => {
+            bot.send_message(
+                message.chat.id,
+                "Hello! This is AAA Bot. \
+		 I am yor personal \
+		 task-manger. Type /help \
+		 to display command list",
+            )
+            .await?
+        }
         Command::Help => {
             bot.send_message(message.chat.id, Command::descriptions().to_string())
                 .await?
