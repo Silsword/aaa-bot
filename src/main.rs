@@ -24,11 +24,13 @@ static NOTES: Lazy<Mutex<Notes>> = Lazy::new(|| Mutex::new(load_from_file()));
 async fn main() {
     log::info!("Starting command bot...");
 
-    let bot = Bot::new("5682122934:AAHRRQFnp-IIZTAuFkJXdDNIfpWWxmkYoKY").auto_send();
+    let bot = Bot::new("<token here>").auto_send();
 
     teloxide::commands_repl(bot, answer, Command::ty()).await;
 }
 
+
+/// Declaration and description of commands
 #[derive(BotCommands, Clone)]
 #[command(rename = "lowercase", description = "These commands are supported:")]
 enum Command {
@@ -73,12 +75,16 @@ enum Command {
     Agenda,
 }
 
+/// Incapsulation of work with static global variable NOTES
+
 fn note_add(inst: Note) {
+    //! Incapsulate add method
     NOTES.lock().unwrap().add(inst.clone());
     save_to_file(&Notes::from_json(NOTES.lock().unwrap().to_json()));
 }
 
 fn note_set_state(id: u64, state: String) -> bool {
+    //! Incapsulate set_state_from_string method
     if let Some(mut note) = NOTES.lock().unwrap().note_as_mut(id) {
         note.set_state_from_string(state);
         true
@@ -88,6 +94,7 @@ fn note_set_state(id: u64, state: String) -> bool {
 }
 
 fn note_set_deadline(id: u64, deadline: String) -> bool {
+    //! Incapsulate set_deadline method
     if let Some(mut note) = NOTES.lock().unwrap().note_as_mut(id) {
         note.set_deadline(Some(deadline));
         save_to_file(&Notes::from_json(NOTES.lock().unwrap().to_json()));
@@ -98,6 +105,7 @@ fn note_set_deadline(id: u64, deadline: String) -> bool {
 }
 
 fn note_set_text(id: u64, text: String) -> bool {
+    //! Incapsulate set_text method
     if let Some(mut note) = NOTES.lock().unwrap().note_as_mut(id) {
         note.set_text(text);
         save_to_file(&Notes::from_json(NOTES.lock().unwrap().to_json()));
@@ -108,6 +116,7 @@ fn note_set_text(id: u64, text: String) -> bool {
 }
 
 fn note_set_name(id: u64, name: String) -> bool {
+    //! Incapsulate set_name method
     if let Some(mut note) = NOTES.lock().unwrap().note_as_mut(id) {
         note.set_header(name);
         save_to_file(&Notes::from_json(NOTES.lock().unwrap().to_json()));
@@ -118,11 +127,13 @@ fn note_set_name(id: u64, name: String) -> bool {
 }
 
 fn note_delete(id: u64) {
+    //! Incapsulate delete method
     NOTES.lock().unwrap().delete(id);
     save_to_file(&Notes::from_json(NOTES.lock().unwrap().to_json()));
 }
 
 fn note_show(id: u64) -> Option<Note> {
+    //! Incapsulate note_by_id method
     if let Some(note) = NOTES.lock().unwrap().note_by_id(id) {
         Some(note.clone())
     } else {
@@ -131,18 +142,22 @@ fn note_show(id: u64) -> Option<Note> {
 }
 
 fn note_list(chat_id: u64) -> Vec<Note> {
+    //! Incapsulate selection by chat_id
     NOTES.lock().unwrap().notes_by_chat(chat_id)
 }
 
 fn note_list_all(chat_id: u64) -> Vec<Note> {
+    //! Incapsulate selection notes by chat with any state
     NOTES.lock().unwrap().notes_by_chat_all(chat_id)
 }
 
 fn note_agenda(chat_id: u64) -> Vec<Note> {
+    //! Incapsulate selection notes by date
     NOTES.lock().unwrap().notes_agenda(chat_id)
 }
 
 async fn answer(
+    //! Function for handling commands
     bot: AutoSend<Bot>,
     message: Message,
     command: Command,
@@ -237,6 +252,7 @@ async fn answer(
 }
 
 fn text_parser(input: String) -> Result<(u64, String), ParseError> {
+    //! Parse messages with text like <id> <name> or <id> <text>
     let tmp: Vec<&str> = input.split(" ").collect();
     if let Ok(id) = tmp.get(0).unwrap().parse::<u64>() {
         let text = &tmp[1..].join(" ").to_string();
@@ -249,5 +265,6 @@ fn text_parser(input: String) -> Result<(u64, String), ParseError> {
 }
 
 fn one_line_parser(input: String) -> Result<(String,), ParseError> {
+    //! Parse messages with text like <name>
     Ok((input,))
 }
