@@ -6,7 +6,7 @@ Bot writen in Rust with Teloxide framework.
 ## Building
 Add your token to this line in main.rs:
 ```rust
-	let bot = Bot::new("<token here>").auto_send();
+let bot = Bot::new("<token here>").auto_send();
 ```
 
 ```
