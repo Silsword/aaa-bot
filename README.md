@@ -17,3 +17,8 @@ $ cargo build --release
 ## Usage
 Type `/start` to display welcome message.
 
+## Documentation
+Run
+```
+$ cargo doc --open
+```
