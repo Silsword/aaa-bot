@@ -3,7 +3,7 @@ use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use serde_json::{Result, Value};
 
-static mut NOTES_COUNT: u64 = 0;
+static mut TASK_COUNT: u64 = 0;
 
 /// List of states
 #[derive(Serialize, Deserialize, Hash, PartialEq, Eq, Clone)]
@@ -40,7 +40,7 @@ impl State {
 
 /// Struct to representing of one note or task
 #[derive(Serialize, Deserialize, Hash, Eq, Clone)]
-pub struct Note {
+pub struct Task {
     id: u64,
     header: String,
     chat_id: u64,
@@ -50,22 +50,22 @@ pub struct Note {
 }
 
 /// Implementation of ParitialEq trait
-impl PartialEq for Note {
+impl PartialEq for Task {
     fn eq(&self, other: &Self) -> bool {
         self.id == other.id
     }
 }
 
 /// Implementation of Note struct
-impl Note {
-    pub fn new() -> Note {
+impl Task {
+    pub fn new() -> Task {
         //! Default initialization
         let current;
         unsafe {
-            current = NOTES_COUNT;
-            NOTES_COUNT += 1;
+            current = TASK_COUNT;
+            TASK_COUNT += 1;
         };
-        Note {
+        Task {
             id: current,
             header: String::new(),
             chat_id: 0,
@@ -75,9 +75,9 @@ impl Note {
         }
     }
 
-    pub fn dry_new() -> Note {
+    pub fn dry_new() -> Task {
         //! Initialization without changing `NOTES_COUNT`
-        Note {
+        Task {
             id: 0,
             header: String::new(),
             chat_id: 0,
@@ -87,65 +87,65 @@ impl Note {
         }
     }
 
-    pub fn with_id(self, new_id: u64) -> Note {
+    pub fn with_id(self, new_id: u64) -> Task {
         //! Change ID in initialization
-        Note { id: new_id, ..self }
+        Task { id: new_id, ..self }
     }
 
-    pub fn with_header(self, head: String) -> Note {
+    pub fn with_header(self, head: String) -> Task {
         //! Change name in initialization
-        Note {
+        Task {
             header: head,
             ..self
         }
     }
 
-    pub fn with_chat(self, chat: u64) -> Note {
+    pub fn with_chat(self, chat: u64) -> Task {
         //! Change chat_id in initialization
-        Note {
+        Task {
             chat_id: chat,
             ..self
         }
     }
 
-    pub fn with_text(self, note: String) -> Note {
+    pub fn with_text(self, note: String) -> Task {
         //! Change text in initialization
-        Note { text: note, ..self }
+        Task { text: note, ..self }
     }
 
-    pub fn with_state_todo(self) -> Note {
+    pub fn with_state_todo(self) -> Task {
         //! Change ToDo-state in initialization
-        Note {
+        Task {
             state: State::ToDo,
             ..self
         }
     }
 
-    pub fn with_state_doing(self) -> Note {
+    pub fn with_state_doing(self) -> Task {
         //! Change Doing-state in initialization
-        Note {
+        Task {
             state: State::Doing,
             ..self
         }
     }
 
-    pub fn with_state_done(self) -> Note {
+    pub fn with_state_done(self) -> Task {
         //! Change Done-state in initialization
-        Note {
+        Task {
             state: State::Done,
             ..self
         }
     }
 
-    pub fn with_deadline(self, date: String) -> Note {
+    pub fn with_deadline(self, date: String) -> Task {
         //! Change due date in initialization
-        Note {
+        Task {
             deadline: Some(date),
             ..self
         }
     }
 
-    pub fn from_json(json: String) -> Note {
+    pub fn from_json(json: String) -> Task {
         //! Parse struct from JSON
         serde_json::from_str(&json).unwrap()
     }
@@ -243,12 +243,12 @@ impl Note {
     pub fn set_count(count: u64) {
         //! Change global `NOTES_COUNT`
         unsafe {
-            NOTES_COUNT = count;
+            TASK_COUNT = count;
         }
     }
 }
 /// Impl `Default` trait
-impl Default for Note {
+impl Default for Task {
     fn default() -> Self {
         Self::new()
     }

@@ -1,5 +1,5 @@
 //! Describes collection of `Note`
-use super::note::Note;
+use super::task::Task;
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -7,49 +7,51 @@ use std::{
     str::FromStr,
 };
 
-
 /// Struct describing collection of `Note`
 #[derive(Serialize, Deserialize)]
-pub struct Notes {
-    notes: HashMap<u64, Note>,
+pub struct ToDoList {
+    notes: HashMap<u64, Task>,
     size: u64,
 }
 
 /// Notes implementation
-impl Notes {
-    pub fn new() -> Notes {
-	//! Default initialization
-        Notes {
+impl ToDoList {
+    pub fn new() -> ToDoList {
+        //! Default initialization
+        ToDoList {
             notes: HashMap::new(),
             size: 0,
         }
     }
 
-    pub fn add(&mut self, note: Note) {
-	//! Add new `Note` to collection
-        self.notes.insert(note.id(), note);
-	self.size += 1;
+    pub fn add(&mut self, note: Task) {
+        //! Add new `Note` to collection
+        if let None = self.notes.insert(note.id(), note) {
+            self.size += 1;
+	}
     }
 
     pub fn delete(&mut self, id: u64) {
-	//! Delete `Note` by id
-        self.notes.remove(&id);
+        //! Delete `Note` by id
+	if let Some(_) = self.notes.remove(&id) {
+	    self.size -= 1;
+	}
     }
 
     pub fn to_json(&self) -> String {
-	//! Serialize to JSON
+        //! Serialize to JSON
         serde_json::to_string(self).unwrap()
     }
 
-    pub fn from_json(notes: String) -> Notes {
-	//! Deserialize from JSON
-        let notes: Notes = serde_json::from_str(&notes).unwrap();
-        Note::set_count(notes.size as u64);
+    pub fn from_json(notes: String) -> ToDoList {
+        //! Deserialize from JSON
+        let notes: ToDoList = serde_json::from_str(&notes).unwrap();
+        Task::set_count(notes.size as u64);
         notes
     }
 
-    pub fn notes_by_chat_all(&self, chat_id: u64) -> Vec<Note> {
-	//! Select notes by chat
+    pub fn notes_by_chat_all(&self, chat_id: u64) -> Vec<Task> {
+        //! Select notes by chat
         self.notes
             .iter()
             .filter(|note| note.1.chat_id() == chat_id)
@@ -58,8 +60,8 @@ impl Notes {
             .collect()
     }
 
-    pub fn notes_by_chat(&self, chat_id: u64) -> Vec<Note> {
-	//! Filter notes in state `Done`
+    pub fn notes_by_chat(&self, chat_id: u64) -> Vec<Task> {
+        //! Filter notes in state `Done`
         self.notes_by_chat_all(chat_id)
             .iter()
             .filter(|note| !note.done())
@@ -67,18 +69,18 @@ impl Notes {
             .collect()
     }
 
-    pub fn note_by_id(&self, id: u64) -> Option<&Note> {
-	//! Select `Note` by id
+    pub fn note_by_id(&self, id: u64) -> Option<&Task> {
+        //! Select `Note` by id
         self.notes.get(&id)
     }
 
-    pub fn note_as_mut(&mut self, id: u64) -> Option<&mut Note> {
-	//! Select `Note` by id with mutability
+    pub fn note_as_mut(&mut self, id: u64) -> Option<&mut Task> {
+        //! Select `Note` by id with mutability
         self.notes.get_mut(&id)
     }
 
-    pub fn notes_agenda(&self, chat_id: u64) -> Vec<Note> {
-	//! Filter notes by date
+    pub fn notes_agenda(&self, chat_id: u64) -> Vec<Task> {
+        //! Filter notes by date
         let date: NaiveDate = chrono::Utc::now().naive_local().date();
         self.notes_by_chat(chat_id)
             .iter()

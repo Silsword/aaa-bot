@@ -1,7 +1,7 @@
 use chrono::NaiveDate;
 use file::{load_from_file, save_to_file};
-use note::Note;
-use notes::Notes;
+use task::Task;
+use todo_list::ToDoList;
 use once_cell::sync::Lazy;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
@@ -15,16 +15,16 @@ use teloxide::{
 };
 
 mod file;
-mod note;
-mod notes;
+mod task;
+mod todo_list;
 
-static NOTES: Lazy<Mutex<Notes>> = Lazy::new(|| Mutex::new(load_from_file()));
+static NOTES: Lazy<Mutex<ToDoList>> = Lazy::new(|| Mutex::new(load_from_file()));
 
 #[tokio::main]
 async fn main() {
     log::info!("Starting command bot...");
 
-    let bot = Bot::new("<token here>").auto_send();
+    let bot = Bot::new("5682122934:AAHRRQFnp-IIZTAuFkJXdDNIfpWWxmkYoKY").auto_send();
 
     teloxide::commands_repl(bot, answer, Command::ty()).await;
 }
@@ -76,9 +76,9 @@ enum Command {
 
 /// Incapsulation of work with static global variable NOTES
 /// Incapsulate add method
-fn note_add(inst: Note) {
+fn note_add(inst: Task) {
     NOTES.lock().unwrap().add(inst.clone());
-    save_to_file(&Notes::from_json(NOTES.lock().unwrap().to_json()));
+    save_to_file(&ToDoList::from_json(NOTES.lock().unwrap().to_json()));
 }
 
 /// Incapsulate set_state_from_string method
@@ -95,7 +95,7 @@ fn note_set_state(id: u64, state: String) -> bool {
 fn note_set_deadline(id: u64, deadline: String) -> bool {
     if let Some(mut note) = NOTES.lock().unwrap().note_as_mut(id) {
         note.set_deadline(Some(deadline));
-        save_to_file(&Notes::from_json(NOTES.lock().unwrap().to_json()));
+        save_to_file(&ToDoList::from_json(NOTES.lock().unwrap().to_json()));
         true
     } else {
         false
@@ -106,7 +106,7 @@ fn note_set_deadline(id: u64, deadline: String) -> bool {
 fn note_set_text(id: u64, text: String) -> bool {
     if let Some(mut note) = NOTES.lock().unwrap().note_as_mut(id) {
         note.set_text(text);
-        save_to_file(&Notes::from_json(NOTES.lock().unwrap().to_json()));
+        save_to_file(&ToDoList::from_json(NOTES.lock().unwrap().to_json()));
         true
     } else {
         false
@@ -117,7 +117,7 @@ fn note_set_text(id: u64, text: String) -> bool {
 fn note_set_name(id: u64, name: String) -> bool {
     if let Some(mut note) = NOTES.lock().unwrap().note_as_mut(id) {
         note.set_header(name);
-        save_to_file(&Notes::from_json(NOTES.lock().unwrap().to_json()));
+        save_to_file(&ToDoList::from_json(NOTES.lock().unwrap().to_json()));
         true
     } else {
         false
@@ -127,11 +127,11 @@ fn note_set_name(id: u64, name: String) -> bool {
 /// Incapsulate delete method
 fn note_delete(id: u64) {
     NOTES.lock().unwrap().delete(id);
-    save_to_file(&Notes::from_json(NOTES.lock().unwrap().to_json()));
+    save_to_file(&ToDoList::from_json(NOTES.lock().unwrap().to_json()));
 }
 
 /// Incapsulate note_by_id method
-fn note_show(id: u64) -> Option<Note> {
+fn note_show(id: u64) -> Option<Task> {
     if let Some(note) = NOTES.lock().unwrap().note_by_id(id) {
         Some(note.clone())
     } else {
@@ -140,17 +140,17 @@ fn note_show(id: u64) -> Option<Note> {
 }
 
 /// Incapsulate selection by chat_id
-fn note_list(chat_id: u64) -> Vec<Note> {
+fn note_list(chat_id: u64) -> Vec<Task> {
     NOTES.lock().unwrap().notes_by_chat(chat_id)
 }
 
 /// Incapsulate selection notes by chat with any state
-fn note_list_all(chat_id: u64) -> Vec<Note> {
+fn note_list_all(chat_id: u64) -> Vec<Task> {
     NOTES.lock().unwrap().notes_by_chat_all(chat_id)
 }
 
 /// Incapsulate selection notes by date
-fn note_agenda(chat_id: u64) -> Vec<Note> {
+fn note_agenda(chat_id: u64) -> Vec<Task> {
     NOTES.lock().unwrap().notes_agenda(chat_id)
 }
 
@@ -176,7 +176,7 @@ async fn answer(
                 .await?
         }
         Command::Create(name) => {
-            let inst = Note::new()
+            let inst = Task::new()
                 .with_header(name)
                 .with_chat(message.chat.id.0 as u64);
             note_add(inst.clone());
